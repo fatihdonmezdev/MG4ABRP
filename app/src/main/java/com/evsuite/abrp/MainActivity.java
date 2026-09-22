@@ -41,7 +41,7 @@ public class MainActivity extends AppCompatActivity {
     private static final int LOCATION_PERMISSION_REQUEST = 100;
     /** Shared with {@link AbrpUploadService}, which reads it on every tick. */
     static final String WIFI_AUTO_KEY = "wifi_auto_connect";
-    private static final String REPOSITORY_URL = "https://github.com/fatihdonmezdev/EVABRP";
+    private static final String REPOSITORY_URL = "https://github.com/fatihdonmezdev/MG4ABRP";
 
     /** Top-bar tabs, in page order. Parallel to {@link #panes}. */
     private static final int[] TAB_IDS =
@@ -230,6 +230,7 @@ public class MainActivity extends AppCompatActivity {
 
         setUpPager();
         findViewById(R.id.about_button).setOnClickListener(v -> showAbout());
+        findViewById(R.id.update_button).setOnClickListener(v -> checkForUpdate(v));
 
         bindCadenceControls();
 
@@ -627,6 +628,30 @@ public class MainActivity extends AppCompatActivity {
         lowSocInput.setText(String.valueOf(value));
         prefs.edit().putInt(UploadSettings.KEY_LOW_SOC_PERCENT, value).apply();
         AbrpUploadService.reloadSettings();
+    }
+
+    // ---------- Update check ----------
+
+    /**
+     * Checks for a newer build, and installs one if it is there.
+     *
+     * The button is disabled for the duration rather than guarded by a flag: the whole
+     * sequence — API call, download, {@code pm install} — runs on a background thread, and
+     * a second press would start a second download of the same APK. It comes back on when
+     * the result lands, whatever that result is.
+     *
+     * The outcome goes to a toast because there is nowhere better: the check is reachable
+     * from every page, so no one page owns the answer.
+     */
+    private void checkForUpdate(View button) {
+        button.setEnabled(false);
+        android.widget.Toast.makeText(this, R.string.update_checking,
+                android.widget.Toast.LENGTH_SHORT).show();
+        UpdateHook.checkInBackground(this, message -> {
+            button.setEnabled(true);
+            android.widget.Toast.makeText(this, message,
+                    android.widget.Toast.LENGTH_LONG).show();
+        });
     }
 
     // ---------- Wi-Fi page ----------

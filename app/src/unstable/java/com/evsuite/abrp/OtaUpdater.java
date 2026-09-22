@@ -46,7 +46,7 @@ final class OtaUpdater {
      * nothing until this repository publishes a release, which is the intended quiet.
      */
     private static final String RELEASES_API =
-            "https://api.github.com/repos/fatihdonmezdev/EVABRP/releases";
+            "https://api.github.com/repos/fatihdonmezdev/MG4ABRP/releases";
 
     /**
      * Hosts an update may come from. The githubusercontent entries are the CDNs GitHub

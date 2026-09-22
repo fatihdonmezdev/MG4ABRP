@@ -92,8 +92,21 @@
             android:text="@string/tab_log"
             app:icon="@drawable/ic_tab_log" />
 
-        <!-- About opens a dialog, not a page: it stays a plain button so it cannot be
-             mistaken for a fourth destination of the pager. -->
+        <!-- Neither of these is a destination: they stay plain buttons, outside the tab
+             row, so they cannot be mistaken for pages of the pager. -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/update_button"
+            style="@style/Widget.EV.Button.Outlined"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="@dimen/spacing_sm"
+            android:contentDescription="@string/update_check"
+            app:icon="@drawable/ic_refresh"
+            app:iconPadding="0dp"
+            android:minWidth="0dp"
+            android:paddingStart="@dimen/spacing_md"
+            android:paddingEnd="@dimen/spacing_md" />
+
         <com.google.android.material.button.MaterialButton
             android:id="@+id/about_button"
             style="@style/Widget.EV.Button.Outlined"
