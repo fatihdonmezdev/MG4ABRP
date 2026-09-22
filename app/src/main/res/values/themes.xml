@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools">
+
+    <!-- DayNight, not a forced dark theme: the suite follows the vehicle's day/night
+         setting. Dark is still the mode that matters - a light background filling the
+         windscreen at night is glare - which is why the light palette was raised to
+         the same 7:1 floor as the dark one rather than the other way round.
+         Shared component styles live in styles_ev.xml. -->
+    <style name="Theme.EVABRPUploader" parent="Theme.Material3.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/ev_accent</item>
+        <item name="colorOnPrimary">@color/ev_on_accent</item>
+        <item name="colorSurface">@color/ev_surface</item>
+        <item name="colorSurfaceContainer">@color/ev_surface_raised</item>
+        <item name="android:colorBackground">@color/ev_background</item>
+        <item name="android:windowBackground">@color/ev_background</item>
+        <item name="colorError">@color/ev_error</item>
+        <item name="android:statusBarColor">@color/ev_background</item>
+        <!-- Material3's "on surface" is a grey-mauve that is comfortable indoors and
+             too weak in full sun: a hard contrast is imposed instead. -->
+        <item name="colorOnSurface">@color/ev_text_primary</item>
+        <item name="colorOnSurfaceVariant">@color/ev_text_secondary</item>
+        <item name="colorOnBackground">@color/ev_text_primary</item>
+        <item name="colorOutline">@color/ev_outline</item>
+        <item name="android:textColorPrimary">@color/ev_text_primary</item>
+        <item name="android:textColorSecondary">@color/ev_text_secondary</item>
+        <item name="materialAlertDialogTheme">@style/ThemeOverlay.EV.Dialog</item>
+    </style>
+</resources>

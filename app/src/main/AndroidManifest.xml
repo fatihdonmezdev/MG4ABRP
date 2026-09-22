@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <!-- Required from API 33 to post the foreground-service notification, which is the
+         only status UI the service has. Without it the notification is silently dropped. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+
+    <!-- Wi-Fi auto-join. CHANGE_WIFI_STATE covers enabling the radio and asking the
+         supplicant to join a network the unit already has saved; ACCESS_WIFI_STATE covers
+         reading which one it landed on. No password is ever handled here — see
+         WifiAutoConnect for why this works on this Android 9 unit and not on a newer one. -->
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+    <uses-permission android:name="android.permission.CHANGE_WIFI_STATE" />
+
+    <!-- Android Automotive / CarPropertyManager permissions -->
+    <uses-permission android:name="android.car.permission.CAR_SPEED" />
+    <uses-permission android:name="android.car.permission.CAR_ENERGY" />
+    <uses-permission android:name="android.car.permission.CAR_ENERGY_PORTS" />
+    <uses-permission android:name="android.car.permission.CAR_EXTERIOR_ENVIRONMENT" />
+    <uses-permission android:name="android.car.permission.CONTROL_CAR_CLIMATE" />
+    <uses-permission android:name="android.car.permission.CAR_VENDOR_EXTENSION" />
+    <!-- Optional telemetry: odometer, tyre pressures and the nominal pack capacity.
+         All three are privileged on AAOS, so an install that is not platform-signed
+         simply reads null and the fields are omitted — declaring them costs nothing
+         and lets a platform-signed install send them. -->
+    <uses-permission android:name="android.car.permission.CAR_MILEAGE" />
+    <uses-permission android:name="android.car.permission.CAR_TIRES" />
+    <uses-permission android:name="android.car.permission.CAR_INFO" />
+
+    <!-- The head unit's map stack, which owns the weather service the uploader asks for the
+         outside temperature. From API 30 an explicit bind to a package this app does not
+         declare here simply fails, and ext_temp would go back to being unreportable. -->
+    <queries>
+        <package android:name="com.saicmotor.mapservice" />
+    </queries>
+
+    <application
+        android:allowBackup="false"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:fullBackupContent="@xml/backup_rules"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.EVABRPUploader">
+
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:taskAffinity="">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <service
+            android:name=".AbrpUploadService"
+            android:exported="false"
+            android:foregroundServiceType="location" />
+
+        <!-- The head unit resumes far more often than it cold-boots, and announces the
+             resume with QUICKBOOT_POWERON. Listening only for BOOT_COMPLETED is why
+             uploading did not start with the car. MY_PACKAGE_REPLACED covers the other
+             gap: an update stops the service and nothing else restarts it. -->
+        <receiver
+            android:name=".BootReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.LOCKED_BOOT_COMPLETED" />
+                <action android:name="android.intent.action.QUICKBOOT_POWERON" />
+                <action android:name="com.htc.intent.action.QUICKBOOT_POWERON" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+            </intent-filter>
+        </receiver>
+
+    </application>
+
+</manifest>

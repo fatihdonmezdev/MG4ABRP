@@ -1,0 +1,122 @@
+<resources>
+    <string name="app_name">Fatih\'sMG4</string>
+
+    <!-- Main screen -->
+    <string name="tab_abrp">ABRP</string>
+    <string name="tab_service">Upload Service</string>
+    <string name="tab_vehicle">Araç</string>
+    <string name="tab_wifi">Wi-Fi</string>
+    <string name="tab_log">Log</string>
+
+    <!-- Wi-Fi page -->
+    <string name="wifi_card_title">Wi-Fi Bağlantısı</string>
+    <string name="wifi_current">Bağlı ağ</string>
+    <string name="wifi_state">Durum</string>
+    <string name="wifi_connect_now">Şimdi Bağlan</string>
+    <string name="wifi_auto_label">Arka planda otomatik bağlan</string>
+    <string name="wifi_auto_hint">Yükleme servisi çalışırken bağlantı koptuğunda kayıtlı ağlara kendi kendine bağlanmayı dener.</string>
+    <string name="wifi_saved_title">Kayıtlı Ağlar</string>
+    <string name="wifi_saved_empty">Kayıtlı ağ okunamadı</string>
+    <string name="wifi_not_connected">Bağlı değil</string>
+
+    <!-- Vehicle page -->
+    <string name="vehicle_live_data">Canlı Araç Verileri</string>
+    <string name="vehicle_tires">Lastik Basınçları</string>
+    <string name="vehicle_row_soc">Şarj (SOC)</string>
+    <string name="vehicle_row_range">Menzil</string>
+    <string name="vehicle_row_power">Güç</string>
+    <string name="vehicle_row_speed">Hız</string>
+    <string name="vehicle_row_odometer">Kilometre</string>
+    <string name="vehicle_row_batt_temp">Batarya Sıcaklığı</string>
+    <string name="vehicle_row_ext_temp">Dış Sıcaklık</string>
+    <string name="vehicle_row_cabin_temp">Kabin Sıcaklığı</string>
+    <string name="vehicle_row_hvac">Klima Ayarı</string>
+    <string name="vehicle_row_capacity">Batarya Kapasitesi</string>
+    <string name="vehicle_row_soe">Kalan Enerji</string>
+    <string name="vehicle_row_charging">Şarj Durumu</string>
+    <string name="vehicle_tire_fl">Ön Sol</string>
+    <string name="vehicle_tire_fr">Ön Sağ</string>
+    <string name="vehicle_tire_rl">Arka Sol</string>
+    <string name="vehicle_tire_rr">Arka Sağ</string>
+    <string name="card_config">Configuration</string>
+    <string name="hint_api_key">ABRP API Key</string>
+    <string name="default_abrp_api_key" translatable="false">8cfc314b-03cd-4efe-ab7d-4431cd8f2e2d</string>
+    <string name="helper_api_key">Default: open-source ABRP telemetry key. You may replace it with your own.</string>
+    <string name="api_key_required">Enter your ABRP API key first</string>
+    <string name="hint_token">ABRP User Token</string>
+    <string name="helper_token">Find your token in the ABRP app: Settings → Connections → Generic (Manual Entry)</string>
+    <string name="desc_toggle_api_key">Show or hide API key</string>
+    <string name="desc_toggle_token">Show or hide user token</string>
+    <string name="btn_save">Save</string>
+    <string name="btn_test">Test Connection</string>
+    <string name="btn_import">Import file</string>
+
+    <!-- Config file import -->
+    <string name="import_ok">Config imported — press Test to verify</string>
+    <string name="import_err_read">Could not read that file</string>
+    <string name="import_err_empty">No ABRP settings found in that file</string>
+    <string name="import_err_not_found">No config file found. Copy it to %1$s</string>
+
+    <!-- Connection test -->
+    <string name="conn_testing">Testing…</string>
+    <string name="conn_ok">Connected — API responding OK</string>
+    <string name="conn_err_auth">Auth failed — check your API key and token</string>
+    <string name="perm_denied_location">Location denied — telemetry will have no position. Grant it in Settings to send GPS to ABRP.</string>
+    <string name="perm_denied_car">Vehicle data denied — no battery %%, speed or range will be sent. Grant it in Settings.</string>
+    <string name="perm_denied_all">Location and vehicle data denied — only a timestamp will be sent. Grant both in Settings.</string>
+    <string name="conn_err_no_internet">No internet connection</string>
+    <string name="conn_err_timeout">Connection timed out</string>
+    <string name="conn_err_http">Server error (HTTP %1$d)</string>
+    <string name="token_required">Enter your ABRP token first</string>
+
+    <string name="card_service">Upload Service</string>
+    <string name="label_upload_enabled">Enable background uploading</string>
+    <string name="label_autostart">Start automatically with the car</string>
+    <string name="hint_autostart">Uploading resumes on its own when the head unit powers up. Turn this off to start it by hand from this screen.</string>
+
+    <string name="status_stopped">Service not running</string>
+
+    <!-- Cadence configuration -->
+    <string name="label_frequency">Upload frequency</string>
+    <string name="hint_frequency">Applies while driving. Parked and unplugged, the app backs off to one upload every 15 minutes on its own.</string>
+    <string name="label_boost_low_soc">Upload more often at low battery</string>
+    <string name="label_low_soc_threshold">Low battery threshold (%)</string>
+    <plurals name="interval_seconds">
+        <item quantity="one">Every %1$d second</item>
+        <item quantity="other">Every %1$d seconds</item>
+    </plurals>
+    <plurals name="interval_minutes">
+        <item quantity="one">Every %1$d minute</item>
+        <item quantity="other">Every %1$d minutes</item>
+    </plurals>
+
+    <!-- Service state -->
+    <string name="state_stopped">Stopped</string>
+    <string name="state_starting">Starting…</string>
+    <string name="state_running">Running</string>
+    <string name="state_error">In error — last %1$d uploads failed</string>
+
+    <!-- Call log -->
+    <string name="label_call_log">Recent uploads</string>
+    <string name="call_log_empty">No upload attempted yet.</string>
+    <string name="status_starting">Starting…</string>
+    <string name="status_running_no_upload">Running — waiting for first upload</string>
+    <string name="status_last_upload">Last upload: %1$s (%2$s)</string>
+    <string name="status_ok">OK</string>
+
+    <!-- Notification -->
+    <string name="notif_channel_name">ABRP Upload Service</string>
+    <string name="notif_channel_desc">Shows vehicle telemetry upload status</string>
+    <string name="notif_title">ABRP Uploader</string>
+    <string name="notif_action_stop">Stop</string>
+    <string name="about_action">About</string>
+    <string name="about_title">Fatih\'sMG4 Hakkında</string>
+    <string name="about_version">Version %1$s</string>
+    <string name="about_attribution">Fork of malys / EVABRPUploader\nand Leon Kernan / ABRP_Uploader</string>
+    <string name="about_repository">github.com/fatihdonmezdev/EVABRP</string>
+    <string name="about_made_with_love">MG4 EH32 · SWI69</string>
+    <string name="about_logo_description">EVABRPUploader logo</string>
+    <string name="about_qr_description">QR code for the project repository</string>
+    <string name="about_version_unknown">unknown</string>
+    <string name="about_close">Close</string>
+</resources>

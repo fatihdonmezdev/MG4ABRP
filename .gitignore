@@ -1,0 +1,30 @@
+*.iml
+.gradle
+/local.properties
+/.idea/caches
+/.idea/libraries
+/.idea/modules.xml
+/.idea/workspace.xml
+/.idea/navEditor.xml
+/.idea/assetWizardSettings.xml
+.DS_Store
+/build
+/captures
+.externalNativeBuild
+.cxx
+local.properties
+
+# mise : mise.toml est COMMITÉ (il décrit le build). Seules les surcharges
+# locales, machine-spécifiques, sont ignorées.
+mise.local.toml
+.mise.local.toml
+
+# Signed build output. Rebuilt from source by ./gradlew assembleUnstableDebug and
+# signed locally — a checked-in APK is stale the moment anything above it changes.
+*.apk
+*.idsig
+
+# Build dirs of the vendored EVHardware library.
+/EVHardware/build
+/EVHardware/.gradle
+/EVHardware/**/build

@@ -1,0 +1,290 @@
+# Changelog
+
+All notable changes to this project are documented here. Format follows
+[Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow
+[Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [2.2.2] - 2026-09-17
+
+### Changed
+
+- Updated EVHardware to the shared `master` catalogue and telemetry implementation.
+
+## [2.2.1] - 2026-09-04
+
+### Fixed
+
+- **Speed was uploaded 3.6× too high.** `PERF_VEHICLE_SPEED` reports km/h on SWI68, not the
+  metres per second AAOS specifies, and EVHardware converted it a second time. Every telemetry
+  upload from this generation therefore carried a speed 3.6 times the real one, and ABRP's
+  consumption and arrival models were fed it. Proven on SWI68-29958-1300R67 by two recordings of
+  a 2.4 km route that came out at 7.69 km and 8.46 km — 129 and 124 km/h average over a few
+  minutes of town driving. The conversion is now evidence-gated per firmware generation in
+  EVHardware. Telemetry already sent to ABRP is not corrected by this.
+
+## [2.2.0] - 2026-08-27
+
+### Changed
+
+- Energy acquisition now consumes EVHardware's coherent `EnergySnapshot`; duplicate SOC,
+  range, power, temperature, odometer and charge property ids were removed from the app.
+- Charging-session integration and tyre-pressure reads moved to EVHardware. The local
+  car-property adapter is now unused by production and supports debug diagnostics only.
+
+## [2.1.8] - 2026-08-26
+
+### Fixed
+
+- **The weather answers arrived all along; they were being thrown away.** EVHardware read the
+  reply parcel one int too early — a nullable parcelable argument is written as a presence flag
+  and then the object, so every field landed in the next one's place, the payload's type tag
+  never matched, and a reading that had arrived was reported as unreadable. That is precisely
+  the `map=bound` with nothing behind it that 2.1.7 timed the query to explain. Tracking
+  EVHardware 1.6.0 fixes it, and `ext_temp` has a working source that does not depend on
+  catching a broadcast at the right moment.
+
+## [2.1.7] - 2026-08-26
+
+### Fixed
+
+- **The weather broadcast is real but rare, and the app forgot it between restarts.** The action
+  is confirmed: the head unit's weather app sends `com.saicmotor.weather` when *it* refreshes,
+  not on any cadence this app can ask for. 2.1.6 listened and gave up between refreshes, and the
+  app is restarted every time the driver opens it to look at the log — which is the worst moment
+  to start waiting. The last reading is now kept across restarts for two hours, and the platform
+  is asked at start-up and on every temperature-less upload for a held broadcast, which costs
+  nothing and answers immediately if the weather app sends its update sticky.
+
+### Changed
+
+- **`map=bound` in 2.1.6 corrected the release note that shipped with it.** That release said the
+  map service never bound; the log showed the binder alive and the *query* returning nothing,
+  which is a different failure with a different fix. The map query is now timed, and the elapsed
+  time appears in the log — the query is bounded by a two-second wait inside EVHardware, so a
+  null returning at once was refused or answered undecodably while a null returning at the bound
+  is a service that did not answer in time. Nothing outside the library distinguishes them, and
+  guessing which one it was is what produced the wrong note.
+- The broadcast reading now carries its age in the log (`bcast=Toulouse/12min`): where a value
+  came from does not say whether it still describes the day.
+
+## [2.1.6] - 2026-08-26
+
+### Fixed
+
+- **`ext_temp` was still absent: the weather service 2.1.5 added never bound.** The log added in
+  that release is what showed it — every upload listed `ext_temp` among the omitted fields, with
+  no place name beside the fix. Meanwhile the head unit's own status bar shows a temperature
+  continuously, and it does not get it from that service: it gets it from a broadcast. The
+  uploader now listens for the same one (`com.saicmotor.weather`) and prefers it, falling back
+  to the map service query and, before either, to the vehicle sensor on a car that has one.
+
+  The payload's shape is unverified, so it is read by searching for any key that names a
+  temperature at any depth rather than by a fixed layout, in either unit, whether the value
+  arrives as a number or as a string. A parser written against a guessed layout fails silently
+  and looks exactly like the bug it was meant to fix.
+
+### Added
+
+- **The temperature's source, on every log entry** — `[temp car]`, `[temp bcast:Toulouse]`,
+  `[temp map:...]`, or when nothing answered, why each one did not: `[temp none bcast=no
+  broadcast yet map=unbound]`. A payload that arrives but carries no readable temperature is
+  reported with a sample of what it did carry, which is what a fixed parser would have hidden.
+
+### Notes
+
+- Position is not the problem, and the log settled it: fixes arrive from the `fused` provider,
+  accurate to about a metre and seconds old, with the coordinates the car is actually at. An
+  address that looks wrong on ABRP is not coming from what this app sends.
+
+## [2.1.5] - 2026-08-26
+
+### Fixed
+
+- **`ext_temp` reached ABRP as 0 degC, and 2.1.4 did not change that.** Guarding the value only
+  stopped the app sending a zero; ABRP shows 0 for an absent `ext_temp` too, so the symptom was
+  identical. The cause is the car: this VHAL does not implement `ENV_OUTSIDE_TEMPERATURE`, so
+  there was never a vehicle reading to correct. The outside temperature now comes from the head
+  unit's own weather service (`com.saicmotor.mapservice`, already bound by EVTasker through
+  `SaicWeather`), queried for the car's position and cached for 10 minutes — the query can reach
+  the network from inside the head unit and it blocks the upload thread while it does. The
+  vehicle sensor is still preferred whenever a car does implement it.
+- **A GPS fix could be dropped for being stale when its age was never knowable.** 2.1.4 aged
+  fixes on the monotonic clock, but a provider that does not stamp `getElapsedRealtimeNanos()`
+  leaves it at zero, which dated every fix to the last boot and would have discarded all of
+  them — a staleness guard turning into a position blackout. An unstamped fix is now kept, and
+  a fix from a clock that jumped forward is no longer aged negatively.
+
+### Added
+
+- **The payload summary is in the app's Log tab, not only in logcat.** 2.1.4 put it where a car
+  with no adb attached cannot show it. Each attempt now carries the fields it sent and the ones
+  it left out, which is the only thing that separates "ABRP shows 0" from "the app sent 0".
+- **Position diagnostics on each entry:** the fix's age, its accuracy, the provider that
+  supplied it, and the place name the weather service answered for. ABRP reverse-geocodes the
+  address it displays from the same coordinates, so a place name that disagrees with it means
+  the coordinates are wrong, and one that agrees means ABRP is showing something older.
+
+## [2.1.4] - 2026-08-25
+
+### Fixed
+
+- **The car was reported where it used to be, not where it is.** A GPS fix had no expiry, so
+  `lastLocation` kept whatever it last held. Two paths turned that into a wrong position:
+  start-up seeded it from `getLastKnownLocation()` unconditionally — with a cold receiver that
+  is the *previous* drive's fix, uploaded stamped with the current time for the first minutes
+  of every trip — and once the receiver stopped delivering (garage, tunnel) the same fix was
+  resent forever. A fix is now dropped past `max(5 min, 3 x upload interval)`, measured on the
+  monotonic clock rather than the wall clock, which the head unit adjusts from GPS itself.
+  Position is then omitted and ABRP keeps its own last point instead of being moved backwards.
+- **`ext_temp` could be sent as a freezing day the car never measured.** It was the only
+  temperature without a plausibility guard, while `cabin_temp`, `batt_temp` and `hvac_setpoint`
+  all had one. A VHAL that does not implement `ENV_OUTSIDE_TEMPERATURE` returns `0.0` rather
+  than throwing, so the read looked successful and `ext_temp: 0` went to ABRP's consumption
+  model. Now guarded like the others (-50..80 degC, exactly 0.0 excluded). A genuine 0 degC is
+  lost with it — the cheaper of the two errors, and the same trade-off already made three times.
+
+### Added
+
+- **A one-line summary of every upload in the log.** `TelemetryPayload.summarize()` renders
+  what actually went on the wire, derived from the JSON itself so it cannot drift from the
+  payload it describes, and names the fields that were left out. That is what separates a read
+  that failed from a read that returned something wrong — the question this release started from.
+  Dropped stale fixes are logged with their age.
+
+## [2.1.3] - 2026-08-25
+
+### Removed
+
+- `android.car.permission.CAR_POWERTRAIN` — declared since the first release and never used.
+  The app reads no powertrain property: park state comes from the vendor gear services through
+  EVHardware, and nothing here touches the standard AAOS gear or ignition properties the
+  permission guards. Dropped from the manifest and from the security allowlist.
+
+## [2.1.2] - 2026-08-25
+
+### Fixed
+
+- **The uploader starts on a car that has not granted position yet.** The service declares the
+  `location` foreground type, and since Android 14 every declared type is checked against the
+  permissions held at the moment it enters the foreground — so a fresh install, or a boot
+  before the app had ever been opened, killed the service in its own `onCreate` before the
+  first tick. The type is now claimed only while the permission behind it is held, and the
+  activity asks for the permission *before* starting the service rather than after.
+- **Outside and cabin temperature reach ABRP again.** Both were declared and read since 2.1.0
+  but never requested at runtime, so both properties answered as unreadable and were dropped
+  from every payload.
+- **The service notification is visible.** `POST_NOTIFICATIONS` was declared and never asked
+  for; the only status the service has was being dropped silently on Android 13 and later.
+- A permission granted while the service is already running now takes effect at once instead
+  of at the next boot.
+
+## [2.1.1] - 2026-08-23
+
+### Fixed
+
+- Restored stable release builds by approving the read-only odometer, tyre-pressure and
+  battery-capacity permissions in the security allowlist.
+
+## [2.1.0] - 2026-08-23
+
+### Added
+
+- The telemetry payload now carries every ABRP field this vehicle can actually answer:
+  pack temperature, usable capacity, state of energy, odometer, climate setpoint, the four
+  tyre pressures, and `kwh_charged` for the running charge session. `kwh_charged` has no
+  counter in the VHAL, so it is integrated from the instantaneous charge rate on every
+  sample tick — including the ticks the cadence policy throttles away — and resets when a
+  new session starts.
+- Range falls back to the standard AAOS `RANGE_REMAINING` property when the SWI68 vendor
+  cluster answers nothing, so range now reaches ABRP on other firmware generations too.
+
+### Fixed
+
+- Three vehicle property IDs were off by one and had silently disabled their fields: the
+  charge-port read was the flap (`EV_CHARGE_PORT_OPEN`) rather than the cable
+  (`EV_CHARGE_PORT_CONNECTED`), and the cabin-temperature ID was not a VehiclePropertyIds
+  value at all, so `cabin_temp` had never been sent.
+
+## [2.0.1] - 2026-08-22
+
+### Fixed
+
+- Telemetry no longer stops while the car is charging. Charge detection relied solely on
+  the standard AAOS charge-port property, which this VHAL need not implement: a plugged-in
+  car reading "unplugged" was treated as parked and idle and throttled to one sample every
+  15 minutes, so ABRP never saw the SOC curve it needs to size a charging stop. The charge
+  rate and, failing that, a rising SOC on a parked car are now used as fallbacks.
+- `power` is now signed ABRP's way — positive leaving the battery, negative charging. The
+  vehicle's charge rate uses the opposite convention and was being forwarded unchanged, so
+  ABRP saw a fast-charging car as discharging.
+
+## [2.0.0] - 2026-08-15
+
+### ⚠️ Breaking — existing users must install once more
+
+- Renamed from MG4ABRPUploader to **EVABRPUploader**, and the application id changed from
+  `com.mg4.abrptelemetry` to **`com.evsuite.abrp`**. Android treats this as a different app,
+  so it does not update an existing install: it is added next to it and starts with no ABRP
+  credentials and no permissions. Re-enter your ABRP token here, confirm telemetry reaches
+  your account, and only then uninstall the old app.
+
+## [1.1.0] - 2026-08-10
+
+### Changed
+
+- Reworked the main screen as three swipeable ABRP, Service and Log pages with a fixed,
+  high-contrast top navigation bar and consistent selected-state accessibility.
+- Updated the shared EVHardware dependency to the current catalogue and diagnostics layer.
+
+## [1.0.3] - 2026-08-09
+
+### Fixed
+
+- Corrected stable release packaging and metadata.
+
+## [1.0.2] - 2026-08-04
+
+### Added
+
+- Add an in-app About surface with project information and a repository QR code.
+
+### Security
+
+- Keep unstable OTA downloads in private cache, validate every redirect, verify the APK
+  signing certificate, and require an explicit successful `pm install` result.
+- Remove the public-download update path and its storage permission exposure.
+
+## [1.0.1] - 2026-08-03
+
+### Changed
+
+- Prefill the ABRP API-key input with the public open-source telemetry key while
+  preserving any custom key already saved by the user.
+
+## [1.0.0] - 2026-08-02
+
+### Added
+
+- API key and token inputs are masked by default, with a password visibility
+  toggle sized for in-car touch targets.
+- CONTRIBUTING.md, DESIGN.md and this CHANGELOG.
+- Security issue template.
+
+### Changed
+
+- Adopted the EVSuite design system. Colour, spacing, type and component styles now
+  come from shared tokens (`values/colors.xml`, `values/dimens.xml`,
+  `values/styles_ev.xml`), generated by `tools/sync-tokens.mjs` and specified in
+  [DESIGN.md](DESIGN.md).
+- Theme is now `Theme.Material3.DayNight.NoActionBar`: the app follows the vehicle's
+  day/night setting, and the light palette is held to the same 7:1 contrast floor as
+  the dark one.
+- `ev_outline` raised from `#4A525B` to `#7A8492`. The old value was 2.25:1 against
+  `ev_surface`, below the 3:1 floor for non-text UI, so the card border it was meant
+  to provide effectively was not there.
+- Launcher icon replaced with the EVSuite adaptive icon: charcoal tile, white glyph
+  with a single red accent, product caption. Vector only — the five legacy density
+  bitmap buckets are gone.
+- README restructured to the shared EVSuite skeleton; table of contents is now
+  generated by `tools/sync-docs.mjs`.
+- Repaired bug/feature issue templates (duplicate YAML key, field ordering).

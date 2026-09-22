@@ -1,0 +1,145 @@
+plugins {
+    alias(libs.plugins.android.application)
+}
+
+android {
+    namespace 'com.evsuite.abrp'
+    compileSdk {
+        version = release(36) {
+            minorApiLevel = 1
+        }
+    }
+
+    // Signature de l'APK — rien à voir avec la clé d'API ABRP de l'utilisateur.
+    // Ces valeurs servent UNIQUEMENT au build : elles prouvent que l'APK vient bien de
+    // nous et n'entrent jamais dans l'application. La clé d'API et le token ABRP, eux,
+    // sont saisis dans l'app et stockés chiffrés sur l'appareil (voir SecurePrefs).
+    //
+    // Un keystore contient plusieurs clés : SIGNING_STORE_PASSWORD ouvre le conteneur,
+    // SIGNING_KEY_ALIAS choisit la clé, SIGNING_KEY_PASSWORD ouvre cette clé-là.
+    // Lues depuis l'environnement (CI) ou gradle.properties local — JAMAIS commitées.
+    def keystorePath = System.getenv("SIGNING_KEYSTORE") ?: project.findProperty("signing.keystore")
+    signingConfigs {
+        if (keystorePath != null && file(keystorePath).exists()) {
+            platform {
+                storeFile     file(keystorePath)
+                storePassword System.getenv("SIGNING_STORE_PASSWORD") ?: project.findProperty("signing.store.password")
+                keyAlias      System.getenv("SIGNING_KEY_ALIAS") ?: project.findProperty("signing.key.alias") ?: "platform"
+                keyPassword   System.getenv("SIGNING_KEY_PASSWORD") ?: project.findProperty("signing.key.password")
+            }
+        }
+    }
+
+    defaultConfig {
+        applicationId "com.evsuite.abrp"
+        minSdk 27
+        targetSdk 36
+        versionCode 19
+        versionName "2.2.2"
+
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    // null quand aucun keystore n'est configuré : le build reste possible sur une
+    // machine sans secrets (APK non signé), au lieu d'échouer.
+    def platformSigning = signingConfigs.findByName("platform")
+
+    // Deux canaux de distribution :
+    //  - stable  : diffusé en release taguée, AUCUN auto-update. L'utilisateur installe
+    //              lui-même ; rien dans l'app ne va chercher un APK.
+    //  - unstable : pré-releases publiées à chaque push sur master, avec OTA pour que les testeurs
+    //              soient à jour sans manipulation. Installable à côté du stable.
+    flavorDimensions += "channel"
+    productFlavors {
+        stable {
+            dimension "channel"
+            buildConfigField "boolean", "OTA_ENABLED", "false"
+        }
+        unstable {
+            dimension "channel"
+            applicationIdSuffix ".unstable"
+            // Android uses versionCode, not versionName, to order package updates. Give
+            // every rolling CI build a strictly increasing code so Package Installer does
+            // not treat a newer unstable APK as the same package version.
+            versionCode defaultConfig.versionCode * 100000 +
+                    (project.findProperty('unstableBuild') ?: '0').toString().toInteger()
+            // Le numéro de build fait partie du COEUR numérique de la version
+            // ("1.0.42-unstable"), pas du suffixe : l'updater compare des segments
+            // numériques, donc deux builds unstable doivent différer avant le premier tiret.
+            // -PunstableBuild=<n> est passé par la CI ; 0 en local.
+            versionName "${defaultConfig.versionName}.${project.findProperty('unstableBuild') ?: '0'}"
+            versionNameSuffix "-unstable"
+            buildConfigField "boolean", "OTA_ENABLED", "true"
+        }
+    }
+
+    buildTypes {
+        debug {
+            if (platformSigning != null) signingConfig platformSigning
+        }
+        release {
+            // [T-918] R8 enabled. CarPropertyAdapter reaches the car purely by
+            // reflection, so proguard-rules.pro must keep those targets; a release build
+            // needs an on-vehicle check of the car reads before it ships.
+            minifyEnabled true
+            if (platformSigning != null) signingConfig platformSigning
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+    // BuildConfig.DEBUG gates the debug-only logging (T-912).
+    buildFeatures {
+        buildConfig true
+    }
+
+    lint {
+        abortOnError true
+        checkReleaseBuilds true
+        warningsAsErrors false
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_11
+        targetCompatibility JavaVersion.VERSION_11
+    }
+}
+
+// Version publiée par la CI pour composer le nom de l'asset APK : ce nom DOIT être
+// comparable par l'updater ("EVABRPUploader-unstable-1.0.42.apk"). Le tag de la
+// pré-release est la constante "unstable", écrasée à chaque build.
+tasks.register('printUnstableVersion') {
+    doLast {
+        println "${android.defaultConfig.versionName}.${project.findProperty('unstableBuild') ?: '0'}"
+    }
+}
+
+// Nomme les APK par canal pour que les artefacts de release soient lisibles.
+androidComponents {
+    onVariants(selector().all()) { variant ->
+        variant.outputs.each { output ->
+            if (variant.buildType == "release") {
+                // Le canal unstable garde un nom de fichier stable : l'updater identifie
+                // la version par le tag de la pré-release, jamais par le nom d'APK.
+                output.outputFileName.set(variant.flavorName == "unstable"
+                        ? "EVABRPUploader-unstable.apk"
+                        : "EVABRPUploader-${variant.flavorName}-${output.versionName.get()}.apk")
+            }
+        }
+    }
+}
+
+dependencies {
+    implementation project(':evhardware')
+    implementation libs.appcompat
+    implementation libs.material
+    implementation libs.activity
+    implementation libs.constraintlayout
+    implementation libs.viewpager2
+    implementation libs.security.crypto
+    implementation 'com.google.zxing:core:3.5.3'
+    // android.jar's org.json is a stub in unit tests; the real implementation lets the
+    // telemetry payload tests parse what the app actually builds.
+    testImplementation libs.junit
+    testImplementation libs.json
+    androidTestImplementation libs.ext.junit
+    androidTestImplementation libs.espresso.core
+}

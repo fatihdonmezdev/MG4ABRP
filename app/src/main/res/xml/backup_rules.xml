@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+   Backups are disabled outright (android:allowBackup="false"). These rules are
+   the belt-and-braces layer: the credential store must never leave the device
+   even if backups are re-enabled by mistake.
+-->
+<full-backup-content>
+    <exclude domain="sharedpref" path="abrp_secure_prefs.xml"/>
+    <exclude domain="sharedpref" path="abrp_prefs.xml"/>
+</full-backup-content>
